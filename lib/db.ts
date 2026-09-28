@@ -64,16 +64,34 @@ function localDb(): Promise<PGlite> {
   return globalForDb.pglite;
 }
 
-export async function getFeatures(): Promise<Feature[]> {
-  const rows = await query(`
-    SELECT f.id, f.name, f.description,
-      COUNT(i.id)::int AS issue_count,
-      COUNT(i.id) FILTER (WHERE i.status NOT IN ('Done', 'Rejected'))::int AS open_count
-    FROM features f
-    LEFT JOIN issues i ON i.feature_id = f.id
-    GROUP BY f.id
-    ORDER BY f.name`);
+// search: only features whose name or description contains the text
+export async function getFeatures(search?: string): Promise<Feature[]> {
+  const rows = await query(
+    `SELECT f.id, f.name, f.description,
+       COUNT(i.id)::int AS issue_count,
+       COUNT(i.id) FILTER (WHERE i.status NOT IN ('Done', 'Rejected'))::int AS open_count
+     FROM features f
+     LEFT JOIN issues i ON i.feature_id = f.id
+     ${search ? "WHERE f.name ILIKE $1 OR f.description ILIKE $1" : ""}
+     GROUP BY f.id
+     ORDER BY f.name`,
+    search ? [`%${search}%`] : [],
+  );
   return rows as Feature[];
+}
+
+// Issues where any text field contains the search text, with their feature's name
+export async function searchIssues(search: string): Promise<(Issue & { feature_name: string })[]> {
+  const rows = await query(
+    `SELECT i.*, to_char(i.decision_date, 'YYYY-MM-DD') AS decision_date, f.name AS feature_name
+     FROM issues i
+     JOIN features f ON f.id = i.feature_id
+     WHERE concat_ws(' ', i.current_process, i.issue, i.action_taken, i.raised_by,
+                     i.idea_by, i.status, i.decision_reason) ILIKE $1
+     ORDER BY f.name, i.created_at, i.id`,
+    [`%${search}%`],
+  );
+  return rows as (Issue & { feature_name: string })[];
 }
 
 export async function getFeature(id: number): Promise<Feature | null> {

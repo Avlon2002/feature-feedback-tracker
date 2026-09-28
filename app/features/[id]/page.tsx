@@ -31,7 +31,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ id: st
       )}
 
       {issues.map((i, n) => (
-        <article key={i.id} className="card issue">
+        <article key={i.id} id={`issue-${i.id}`} className="card issue">
           <div className="issue-head">
             <strong>Issue {n + 1}</strong>
             <span className={statusClass(i.status)}>{i.status}</span>
