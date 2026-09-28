@@ -1,69 +1,72 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import DecisionTimeline from "@/components/DecisionTimeline";
-import { getDecisions, getFeature, getFeedbackList, getStatusCounts } from "@/lib/db";
-import { STATUSES, statusClass } from "@/lib/options";
+import SubmitButton from "@/components/SubmitButton";
+import { deleteIssue } from "@/app/actions";
+import { getFeature, getIssues } from "@/lib/db";
+import { statusClass } from "@/lib/options";
 
 export const dynamic = "force-dynamic";
 
-// One feature, all the feedback about it, and every decision made on each piece of feedback
+// One feature and all its issue blocks
 export default async function FeaturePage({ params }: { params: Promise<{ id: string }> }) {
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
 
-  const [feature, items, counts] = await Promise.all([
-    getFeature(id),
-    getFeedbackList({ feature: String(id) }),
-    getStatusCounts(id),
-  ]);
+  const [feature, issues] = await Promise.all([getFeature(id), getIssues(id)]);
   if (!feature) notFound();
-
-  const decisions = await getDecisions(items.map((i) => i.id));
 
   return (
     <>
-      <p className="small">
-        <Link href="/features">Features</Link> › {feature.name}
-      </p>
+      <p className="small"><Link href="/">← All features</Link></p>
       <div className="page-head">
         <div>
           <h1>{feature.name}</h1>
           {feature.description && <p className="muted">{feature.description}</p>}
         </div>
-        <Link href={`/feedback/new?feature=${id}`} className="btn primary">+ Add feedback for this feature</Link>
+        <Link href={`/features/${id}/edit`} className="btn small">Edit feature</Link>
       </div>
 
-      <section className="stats">
-        {STATUSES.filter((s) => counts[s]).map((s) => (
-          <div key={s} className="stat">
-            <span className="stat-n">{counts[s]}</span>
-            <span>{s}</span>
-          </div>
-        ))}
-      </section>
-
-      {items.length === 0 ? (
-        <div className="card empty">
-          No feedback for this feature yet.{" "}
-          <Link href={`/feedback/new?feature=${id}`}>Add the first one →</Link>
-        </div>
-      ) : (
-        items.map((i) => (
-          <article key={i.id} className="card thread">
-            <div className="thread-head">
-              <Link href={`/feedback/${i.id}`} className="muted">#{i.id}</Link>
-              <span className={statusClass(i.status)}>{i.status}</span>
-              <span className="muted small">
-                {i.type} · {i.priority} priority · from <strong>{i.submitted_by}</strong>
-                {i.department && <> ({i.department})</>} · {new Date(i.created_at).toLocaleDateString("en-GB")}
-              </span>
-              <Link href={`/feedback/${i.id}`} className="btn small push-right">Open / add decision</Link>
-            </div>
-            <p className="quote">“{i.feedback}”</p>
-            <DecisionTimeline decisions={decisions.filter((d) => d.feedback_id === i.id)} />
-          </article>
-        ))
+      {issues.length === 0 && (
+        <div className="card empty">No issues yet for this feature.</div>
       )}
+
+      {issues.map((i, n) => (
+        <article key={i.id} className="card issue">
+          <div className="issue-head">
+            <strong>Issue {n + 1}</strong>
+            <span className={statusClass(i.status)}>{i.status}</span>
+            <div className="push-right row">
+              <Link href={`/features/${id}/issues/${i.id}`} className="btn small">Edit</Link>
+              <form action={deleteIssue.bind(null, i.id, id)}>
+                <SubmitButton className="btn small danger" pendingText="…" confirmMessage={`Delete Issue ${n + 1}? This cannot be undone.`}>
+                  Delete
+                </SubmitButton>
+              </form>
+            </div>
+          </div>
+
+          <dl className="fields">
+            <Field label="Current process" value={i.current_process} />
+            <Field label="Issue" value={i.issue} />
+            <Field label="Action taken" value={i.action_taken} />
+            <Field label="Raised by" value={i.raised_by} />
+            <Field label="Idea by" value={i.idea_by} />
+            {i.decision_date && <Field label="Decision date" value={i.decision_date} />}
+            {i.decision_reason && <Field label="Reason" value={i.decision_reason} />}
+          </dl>
+        </article>
+      ))}
+
+      <Link href={`/features/${id}/issues/new`} className="btn primary add-issue">+ Add issue</Link>
+    </>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string | null }) {
+  return (
+    <>
+      <dt>{label}</dt>
+      <dd>{value || <span className="muted">—</span>}</dd>
     </>
   );
 }

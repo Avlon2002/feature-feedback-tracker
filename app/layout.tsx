@@ -3,8 +3,8 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Feature Feedback Tracker",
-  description: "Track employee feedback against portal features and the decisions made",
+  title: "Feature Tracker",
+  description: "Track issues, actions and decisions for each employee portal feature",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -12,12 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <header className="topbar">
-          <Link href="/" className="brand">Feedback Tracker</Link>
-          <nav>
-            <Link href="/">Feedback</Link>
-            <Link href="/features">Features</Link>
-            <Link href="/feedback/new" className="btn primary small">+ New</Link>
-          </nav>
+          <Link href="/" className="brand">Feature Tracker</Link>
         </header>
         <main>{children}</main>
       </body>
