@@ -4,12 +4,24 @@ import { getFeatures } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewFeedback() {
+// /feedback/new?feature=3 pre-selects that feature and returns to its page after saving
+export default async function NewFeedback({ searchParams }: { searchParams: Promise<{ feature?: string }> }) {
+  const featureParam = (await searchParams).feature;
   const features = await getFeatures();
+  const feature = features.find((f) => String(f.id) === featureParam);
+  const backHref = feature ? `/features/${feature.id}` : "/";
+
   return (
     <>
-      <h1>New feedback</h1>
-      <FeedbackForm features={features} action={createFeedback} submitLabel="Save feedback" />
+      <h1>New feedback{feature && <> for {feature.name}</>}</h1>
+      <FeedbackForm
+        features={features}
+        defaultFeatureId={feature?.id}
+        returnTo={backHref}
+        action={createFeedback}
+        submitLabel="Save feedback"
+        cancelHref={backHref}
+      />
     </>
   );
 }

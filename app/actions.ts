@@ -10,7 +10,8 @@ function text(form: FormData, key: string): string | null {
   return v === "" ? null : v;
 }
 
-function feedbackValues(form: FormData) {
+// The "what the user said" part of the form
+function detailsValues(form: FormData) {
   const featureId = text(form, "feature_id");
   const submittedBy = text(form, "submitted_by");
   const feedback = text(form, "feedback");
@@ -24,45 +25,106 @@ function feedbackValues(form: FormData) {
     feedback,
     text(form, "type") ?? "Suggestion",
     text(form, "priority") ?? "Medium",
+  ];
+}
+
+// The "decision" part of the form: [status, action, date, reason, decided_by]
+function decisionValues(form: FormData) {
+  return [
     text(form, "status") ?? "New",
     text(form, "action_taken"),
     text(form, "decision_date"),
     text(form, "decision_reason"),
     text(form, "decided_by"),
-  ];
+  ] as const;
+}
+
+async function insertDecision(feedbackId: number, form: FormData) {
+  await query(
+    `INSERT INTO decisions (feedback_id, status, action_taken, decision_date, decision_reason, decided_by)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [feedbackId, ...decisionValues(form)],
+  );
+  await syncLatestDecision(feedbackId);
+}
+
+// Copy the most recent decision onto the feedback row (or reset it if none are left),
+// so the main list can show the current status without extra queries
+async function syncLatestDecision(feedbackId: number) {
+  await query(
+    `UPDATE feedback fb SET
+       status          = COALESCE(d.status, 'New'),
+       action_taken    = d.action_taken,
+       decision_date   = d.decision_date,
+       decision_reason = d.decision_reason,
+       decided_by      = d.decided_by,
+       updated_at      = now()
+     FROM (SELECT 1) AS one
+     LEFT JOIN LATERAL (
+       SELECT * FROM decisions WHERE feedback_id = $1
+       ORDER BY decision_date DESC NULLS FIRST, created_at DESC, id DESC
+       LIMIT 1
+     ) d ON true
+     WHERE fb.id = $1`,
+    [feedbackId],
+  );
+}
+
+function refresh(featureId?: unknown) {
+  revalidatePath("/");
+  revalidatePath("/features");
+  if (featureId) revalidatePath(`/features/${featureId}`);
 }
 
 export async function createFeedback(form: FormData) {
-  await query(
-    `INSERT INTO feedback
-       (feature_id, submitted_by, department, feedback, type, priority, status,
-        action_taken, decision_date, decision_reason, decided_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-    feedbackValues(form),
+  const rows = await query(
+    `INSERT INTO feedback (feature_id, submitted_by, department, feedback, type, priority)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, feature_id`,
+    detailsValues(form),
   );
-  revalidatePath("/");
-  redirect("/");
+  const { id, feature_id } = rows[0];
+
+  // Only record a first decision if something other than the defaults was filled in
+  const [status, ...rest] = decisionValues(form);
+  if (status !== "New" || rest.some((v) => v !== null)) {
+    await insertDecision(id, form);
+  }
+
+  refresh(feature_id);
+  // Go back where we came from: the feature page if we started there
+  redirect(text(form, "return_to") ?? "/");
 }
 
 export async function updateFeedback(id: number, form: FormData) {
   await query(
     `UPDATE feedback SET
        feature_id=$1, submitted_by=$2, department=$3, feedback=$4, type=$5,
-       priority=$6, status=$7, action_taken=$8, decision_date=$9,
-       decision_reason=$10, decided_by=$11, updated_at=now()
-     WHERE id=$12`,
-    [...feedbackValues(form), id],
+       priority=$6, updated_at=now()
+     WHERE id=$7`,
+    [...detailsValues(form), id],
   );
-  revalidatePath("/");
-  redirect("/");
+  refresh(text(form, "feature_id"));
+  redirect(`/feedback/${id}`);
 }
 
-// goHome: true when deleting from the edit page (go back to the list),
-// false when deleting from the list itself (stay put, keep filters)
 export async function deleteFeedback(id: number, goHome: boolean) {
-  await query("DELETE FROM feedback WHERE id=$1", [id]);
-  revalidatePath("/");
+  await query("DELETE FROM feedback WHERE id=$1", [id]); // its decisions are deleted too (CASCADE)
+  refresh();
   if (goHome) redirect("/");
+}
+
+export async function addDecision(feedbackId: number, form: FormData) {
+  await insertDecision(feedbackId, form);
+  refresh(text(form, "feature_id"));
+  revalidatePath(`/feedback/${feedbackId}`);
+}
+
+export async function deleteDecision(decisionId: number, feedbackId: number) {
+  await query("DELETE FROM decisions WHERE id=$1", [decisionId]);
+  await syncLatestDecision(feedbackId);
+  refresh();
+  revalidatePath(`/feedback/${feedbackId}`);
 }
 
 export async function createFeature(form: FormData) {
@@ -72,11 +134,11 @@ export async function createFeature(form: FormData) {
     "INSERT INTO features (name, description) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING",
     [name, text(form, "description")],
   );
-  revalidatePath("/features");
+  refresh();
 }
 
 export async function deleteFeature(id: number) {
   // Existing feedback is kept; its feature is set to NULL (see schema)
   await query("DELETE FROM features WHERE id=$1", [id]);
-  revalidatePath("/features");
+  refresh();
 }

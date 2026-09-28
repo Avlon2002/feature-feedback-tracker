@@ -30,9 +30,9 @@ export default async function FeaturesPage() {
             )}
             {features.map((f) => (
               <tr key={f.id}>
-                <td><strong>{f.name}</strong></td>
+                <td><Link href={`/features/${f.id}`}><strong>{f.name}</strong></Link></td>
                 <td>{f.description}</td>
-                <td><Link href={`/?feature=${f.id}`}>{f.feedback_count} items</Link></td>
+                <td><Link href={`/features/${f.id}`}>{f.feedback_count} items</Link></td>
                 <td className="right">
                   <form action={deleteFeature.bind(null, f.id)}>
                     <SubmitButton

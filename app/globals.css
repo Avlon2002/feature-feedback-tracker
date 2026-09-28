@@ -113,3 +113,27 @@ td.wrap { min-width: 200px; max-width: 360px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 1rem; }
 .row { display: flex; gap: 0.5rem; }
 .danger-zone { text-align: right; }
+
+h2 { font-size: 1.05rem; margin: 1rem 0 0.5rem; }
+.push-right { margin-left: auto; }
+.page-head { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+.page-head p { margin: 0; }
+
+/* Feedback page: details on the left, decision history on the right */
+.two-col { display: grid; grid-template-columns: 1fr; gap: 0 1.5rem; }
+@media (min-width: 1000px) { .two-col { grid-template-columns: 1fr 1fr; } }
+
+/* Feature page: one card per piece of feedback */
+.thread-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.quote { font-size: 1.02rem; margin: 0.6rem 0 0.8rem; padding-left: 0.75rem; border-left: 3px solid var(--border); }
+
+/* Decision timeline */
+.timeline { list-style: none; margin: 0; padding: 0 0 0 1rem; border-left: 2px solid var(--border); }
+.timeline li { position: relative; padding: 0 0 0.9rem 0.75rem; }
+.timeline li:last-child { padding-bottom: 0; }
+.timeline li::before {
+  content: ""; position: absolute; left: -1.4rem; top: 0.35rem;
+  width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--border);
+}
+.timeline li.current::before { background: var(--primary); }
+.timeline-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.2rem; }

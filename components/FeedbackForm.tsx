@@ -1,24 +1,30 @@
 import Link from "next/link";
 import type { Feature, Feedback } from "@/lib/db";
-import { PRIORITIES, STATUSES, TYPES } from "@/lib/options";
+import { PRIORITIES, TYPES } from "@/lib/options";
+import { DecisionFields } from "./DecisionForm";
 import SubmitButton from "./SubmitButton";
 
 type Props = {
   features: Feature[];
-  item?: Feedback;
+  item?: Feedback;            // set when editing
+  defaultFeatureId?: number;  // pre-select a feature for new feedback
+  returnTo?: string;          // where to go after saving a new item
   action: (form: FormData) => Promise<void>;
   submitLabel: string;
+  cancelHref: string;
 };
 
-export default function FeedbackForm({ features, item, action, submitLabel }: Props) {
+export default function FeedbackForm({ features, item, defaultFeatureId, returnTo, action, submitLabel, cancelHref }: Props) {
+  const isNew = !item;
   return (
     <form action={action} className="card form">
+      {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
       <fieldset>
         <legend>What the user said</legend>
         <div className="grid">
           <label>
             Feature
-            <select name="feature_id" defaultValue={item?.feature_id ?? ""}>
+            <select name="feature_id" defaultValue={item?.feature_id ?? defaultFeatureId ?? ""}>
               <option value="">— General / not specific —</option>
               {features.map((f) => (
                 <option key={f.id} value={f.id}>{f.name}</option>
@@ -39,6 +45,12 @@ export default function FeedbackForm({ features, item, action, submitLabel }: Pr
             Department
             <input name="department" defaultValue={item?.department ?? ""} placeholder="e.g. Finance" />
           </label>
+          <label>
+            Priority
+            <select name="priority" defaultValue={item?.priority ?? "Medium"}>
+              {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
+            </select>
+          </label>
         </div>
         <label>
           Feedback *
@@ -46,43 +58,17 @@ export default function FeedbackForm({ features, item, action, submitLabel }: Pr
         </label>
       </fieldset>
 
-      <fieldset>
-        <legend>Decision</legend>
-        <div className="grid">
-          <label>
-            Status
-            <select name="status" defaultValue={item?.status ?? "New"}>
-              {STATUSES.map((s) => <option key={s}>{s}</option>)}
-            </select>
-          </label>
-          <label>
-            Priority
-            <select name="priority" defaultValue={item?.priority ?? "Medium"}>
-              {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
-            </select>
-          </label>
-          <label>
-            Decision date
-            <input type="date" name="decision_date" defaultValue={item?.decision_date ?? ""} />
-          </label>
-          <label>
-            Decided by
-            <input name="decided_by" defaultValue={item?.decided_by ?? ""} />
-          </label>
-        </div>
-        <label>
-          Action taken
-          <textarea name="action_taken" rows={2} defaultValue={item?.action_taken ?? ""} placeholder="What was done about it?" />
-        </label>
-        <label>
-          Reason for decision
-          <textarea name="decision_reason" rows={2} defaultValue={item?.decision_reason ?? ""} placeholder="Why was it approved / rejected / deferred?" />
-        </label>
-      </fieldset>
+      {/* When editing, decisions are added separately so their history is kept */}
+      {isNew && (
+        <fieldset>
+          <legend>First decision <span className="muted small">(optional — you can add more later)</span></legend>
+          <DecisionFields defaultStatus="New" />
+        </fieldset>
+      )}
 
       <div className="row">
         <SubmitButton className="btn primary">{submitLabel}</SubmitButton>
-        <Link href="/" className="btn">Cancel</Link>
+        <Link href={cancelHref} className="btn">Cancel</Link>
       </div>
     </form>
   );

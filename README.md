@@ -14,8 +14,13 @@ Built with **Next.js** (App Router + Server Actions) and **Postgres**. Runs free
 |---|---|
 | `/` | List of all feedback: status counts, search, filters, CSV export |
 | `/feedback/new` | Log new feedback |
-| `/feedback/[id]` | Edit feedback / record the decision / delete |
+| `/feedback/[id]` | Edit feedback details, see its decision history, add a new decision |
 | `/features` | Add or remove the system features that feedback is logged against |
+| `/features/[id]` | One feature: all its feedback, each with its full decision history |
+
+Each piece of feedback can have **many decisions over time**, stored in the `decisions` table
+(e.g. Under Review → Approved → Done). The latest one by date is also copied onto the feedback
+row, so the main list and CSV show the current status.
 | `/export` | CSV download (respects current filters) |
 
 ## Project layout

@@ -67,9 +67,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 <th>Feedback</th>
                 <th>Status</th>
                 <th>Priority</th>
-                <th>Action taken</th>
+                <th>Latest action</th>
                 <th>Decision date</th>
-                <th>Reason</th>
+                <th>Latest reason</th>
                 <th></th>
               </tr>
             </thead>
@@ -77,7 +77,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
               {items.map((i) => (
                 <tr key={i.id}>
                   <td><Link href={`/feedback/${i.id}`}>{i.id}</Link></td>
-                  <td>{i.feature_name ?? <em className="muted">General</em>}</td>
+                  <td>
+                    {i.feature_id ? (
+                      <Link href={`/features/${i.feature_id}`}>{i.feature_name}</Link>
+                    ) : (
+                      <em className="muted">General</em>
+                    )}
+                  </td>
                   <td>
                     {i.submitted_by}
                     {i.department && <div className="muted small">{i.department}</div>}
@@ -86,7 +92,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                     <Link href={`/feedback/${i.id}`}>{i.feedback}</Link>
                     <div className="muted small">{i.type}</div>
                   </td>
-                  <td><span className={statusClass(i.status)}>{i.status}</span></td>
+                  <td>
+                    <span className={statusClass(i.status)}>{i.status}</span>
+                    {!!i.decision_count && (
+                      <div className="muted small">
+                        <Link href={`/feedback/${i.id}`}>
+                          {i.decision_count} decision{i.decision_count === 1 ? "" : "s"}
+                        </Link>
+                      </div>
+                    )}
+                  </td>
                   <td>{i.priority}</td>
                   <td className="wrap">{i.action_taken}</td>
                   <td className="nowrap">{i.decision_date}</td>

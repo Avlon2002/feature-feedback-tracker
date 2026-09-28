@@ -24,6 +24,18 @@ export type Feedback = {
   decided_by: string | null;
   created_at: string;
   updated_at: string;
+  decision_count?: number;
+};
+
+export type Decision = {
+  id: number;
+  feedback_id: number;
+  status: string;
+  action_taken: string | null;
+  decision_date: string | null; // YYYY-MM-DD
+  decision_reason: string | null;
+  decided_by: string | null;
+  created_at: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,13 +118,17 @@ export async function getFeedbackList(filters: FeedbackFilters = {}): Promise<Fe
   if (filters.q) {
     params.push(`%${filters.q}%`);
     const p = `$${params.length}`;
+    // Search the feedback itself and every decision in its history
     where.push(
-      `(fb.feedback ILIKE ${p} OR fb.submitted_by ILIKE ${p} OR fb.action_taken ILIKE ${p} OR fb.decision_reason ILIKE ${p})`,
+      `(fb.feedback ILIKE ${p} OR fb.submitted_by ILIKE ${p} OR EXISTS (
+         SELECT 1 FROM decisions d WHERE d.feedback_id = fb.id
+           AND (d.action_taken ILIKE ${p} OR d.decision_reason ILIKE ${p} OR d.decided_by ILIKE ${p})))`,
     );
   }
 
   const rows = await query(
-    `SELECT fb.*, to_char(fb.decision_date, 'YYYY-MM-DD') AS decision_date, f.name AS feature_name
+    `SELECT fb.*, to_char(fb.decision_date, 'YYYY-MM-DD') AS decision_date, f.name AS feature_name,
+       (SELECT COUNT(*)::int FROM decisions d WHERE d.feedback_id = fb.id) AS decision_count
      FROM feedback fb
      LEFT JOIN features f ON f.id = fb.feature_id
      ${where.length ? "WHERE " + where.join(" AND ") : ""}
@@ -120,6 +136,25 @@ export async function getFeedbackList(filters: FeedbackFilters = {}): Promise<Fe
     params,
   );
   return rows as Feedback[];
+}
+
+export async function getFeature(id: number): Promise<Feature | null> {
+  const rows = await query("SELECT id, name, description FROM features WHERE id = $1", [id]);
+  return (rows[0] as Feature) ?? null;
+}
+
+// Oldest first, so it reads like a timeline
+export async function getDecisions(feedbackIds: number[]): Promise<Decision[]> {
+  if (feedbackIds.length === 0) return [];
+  const rows = await query(
+    `SELECT id, feedback_id, status, action_taken, decided_by, decision_reason,
+       to_char(decision_date, 'YYYY-MM-DD') AS decision_date, created_at
+     FROM decisions
+     WHERE feedback_id = ANY($1::int[])
+     ORDER BY decision_date NULLS LAST, created_at, id`,
+    [feedbackIds],
+  );
+  return rows as Decision[];
 }
 
 export async function getFeedback(id: number): Promise<Feedback | null> {
@@ -133,9 +168,9 @@ export async function getFeedback(id: number): Promise<Feedback | null> {
   return (rows[0] as Feedback) ?? null;
 }
 
-export async function getStatusCounts(): Promise<Record<string, number>> {
-  const rows = await query(
-    "SELECT status, COUNT(*)::int AS n FROM feedback GROUP BY status",
-  );
+export async function getStatusCounts(featureId?: number): Promise<Record<string, number>> {
+  const rows = featureId
+    ? await query("SELECT status, COUNT(*)::int AS n FROM feedback WHERE feature_id = $1 GROUP BY status", [featureId])
+    : await query("SELECT status, COUNT(*)::int AS n FROM feedback GROUP BY status");
   return Object.fromEntries(rows.map((r) => [r.status, r.n]));
 }
