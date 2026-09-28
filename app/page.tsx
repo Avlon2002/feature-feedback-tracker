@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getFeatures, getFeedbackList, getStatusCounts } from "@/lib/db";
 import { PRIORITIES, STATUSES, statusClass } from "@/lib/options";
+import { deleteFeedback } from "@/app/actions";
+import SubmitButton from "@/components/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +70,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 <th>Action taken</th>
                 <th>Decision date</th>
                 <th>Reason</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -88,6 +91,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   <td className="wrap">{i.action_taken}</td>
                   <td className="nowrap">{i.decision_date}</td>
                   <td className="wrap">{i.decision_reason}</td>
+                  <td>
+                    <div className="row-actions">
+                      <Link href={`/feedback/${i.id}`} className="btn small">Edit</Link>
+                      <form action={deleteFeedback.bind(null, i.id, false)}>
+                        <SubmitButton
+                          className="btn small danger"
+                          pendingText="…"
+                          confirmMessage={`Delete feedback #${i.id}? This cannot be undone.`}
+                        >
+                          Delete
+                        </SubmitButton>
+                      </form>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

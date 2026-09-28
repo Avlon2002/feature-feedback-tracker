@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Feature, Feedback } from "@/lib/db";
 import { PRIORITIES, STATUSES, TYPES } from "@/lib/options";
+import SubmitButton from "./SubmitButton";
 
 type Props = {
   features: Feature[];
@@ -80,7 +81,7 @@ export default function FeedbackForm({ features, item, action, submitLabel }: Pr
       </fieldset>
 
       <div className="row">
-        <button type="submit" className="btn primary">{submitLabel}</button>
+        <SubmitButton className="btn primary">{submitLabel}</SubmitButton>
         <Link href="/" className="btn">Cancel</Link>
       </div>
     </form>

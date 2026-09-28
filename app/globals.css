@@ -63,6 +63,8 @@ main { max-width: 1400px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
 .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
 .btn.danger { color: var(--danger); border-color: var(--danger); }
 .btn.small { padding: 0.25rem 0.6rem; font-size: 0.85rem; }
+.btn:disabled { opacity: 0.6; cursor: wait; }
+.row-actions { display: flex; gap: 0.35rem; }
 
 input, select, textarea {
   width: 100%; padding: 0.45rem 0.6rem; border-radius: 6px;

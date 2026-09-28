@@ -57,10 +57,12 @@ export async function updateFeedback(id: number, form: FormData) {
   redirect("/");
 }
 
-export async function deleteFeedback(id: number) {
+// goHome: true when deleting from the edit page (go back to the list),
+// false when deleting from the list itself (stay put, keep filters)
+export async function deleteFeedback(id: number, goHome: boolean) {
   await query("DELETE FROM feedback WHERE id=$1", [id]);
   revalidatePath("/");
-  redirect("/");
+  if (goHome) redirect("/");
 }
 
 export async function createFeature(form: FormData) {

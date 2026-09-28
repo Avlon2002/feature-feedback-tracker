@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import FeedbackForm from "@/components/FeedbackForm";
+import SubmitButton from "@/components/SubmitButton";
 import { deleteFeedback, updateFeedback } from "@/app/actions";
 import { getFeatures, getFeedback } from "@/lib/db";
 
@@ -25,8 +26,10 @@ export default async function EditFeedback({ params }: { params: Promise<{ id: s
         action={updateFeedback.bind(null, id)}
         submitLabel="Save changes"
       />
-      <form action={deleteFeedback.bind(null, id)} className="danger-zone">
-        <button className="btn danger">Delete this feedback</button>
+      <form action={deleteFeedback.bind(null, id, true)} className="danger-zone">
+        <SubmitButton className="btn danger" pendingText="Deleting…" confirmMessage={`Delete feedback #${id}? This cannot be undone.`}>
+          Delete this feedback
+        </SubmitButton>
       </form>
     </>
   );
