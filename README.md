@@ -1,8 +1,12 @@
-# Feature Tracker
+# Portal Tracker
 
-Track issues with each employee portal feature. Each feature holds a list of **issue blocks**,
-and each block records: **current process, issue, action taken, raised by, idea by, status**
-(plus an optional decision date and reason).
+Two tools in one app, switched with the top menu:
+
+- **Features**: track issues with each employee portal feature. Each feature holds a list of
+  **issue blocks** recording: **current process, issue, action taken, raised by, idea by, status**
+  (plus an optional decision date and reason).
+- **Projects**: simple project management. Each project has a **board** with
+  To do / In progress / Done columns. Tasks can be created straight from a feature issue.
 
 Built with **Next.js** (App Router + Server Actions) and **Postgres**. Runs free on Vercel.
 
@@ -15,6 +19,10 @@ Built with **Next.js** (App Router + Server Actions) and **Postgres**. Runs free
 2. **Open a feature** to see its issue blocks (Issue 1, Issue 2, ...).
 3. **+ Add issue** adds a new block for a different issue with the same feature.
    Each block has its own **Edit** and **Delete**.
+4. **Projects** lists projects with progress bars. Open one to see its board.
+5. **+ Add task** adds a card. Move cards with the **← / →** buttons; click a card to edit it.
+6. On a feature's issue block, **+ Create task** makes a task pre-filled from that issue.
+   The task links back to the issue, and the issue lists its tasks and their status.
 
 ## Project layout
 
@@ -25,10 +33,16 @@ app/features/[id]                     one feature and its issue blocks
 app/features/[id]/edit                rename / delete a feature
 app/features/[id]/issues/new          add an issue block
 app/features/[id]/issues/[issueId]    edit an issue block
+app/projects                          list of projects
+app/projects/new                      new project form
+app/projects/[id]                     a project's board
+app/projects/[id]/edit                edit / delete a project
+app/tasks/new                         new task (?project=ID or ?issue=ID)
+app/tasks/[id]                        edit / delete a task
 app/actions.ts                        all database writes
-components/                           FeatureForm, IssueForm, SubmitButton
+components/                           forms, NavLink (top menu), SubmitButton
 lib/db.ts                             database connection + reads
-lib/options.ts                        status list: edit to customise
+lib/options.ts                        status / priority lists: edit to customise
 db/schema.sql                         table definitions
 proxy.ts                              optional password protection
 ```

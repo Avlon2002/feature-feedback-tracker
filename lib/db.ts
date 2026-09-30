@@ -24,6 +24,32 @@ export type Issue = {
   updated_at: string;
 };
 
+export type Project = {
+  id: number;
+  name: string;
+  description: string | null;
+  due_date: string | null; // YYYY-MM-DD
+  task_count?: number;
+  done_count?: number;
+};
+
+export type Task = {
+  id: number;
+  project_id: number;
+  title: string;
+  description: string | null;
+  assignee: string | null;
+  due_date: string | null; // YYYY-MM-DD
+  priority: string;
+  status: string;
+  issue_id: number | null;
+  // filled in by the queries below when the task is linked to an issue
+  project_name?: string;
+  issue_text?: string | null;
+  feature_id?: number | null;
+  feature_name?: string | null;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any>;
 
@@ -116,4 +142,55 @@ export async function getIssue(id: number): Promise<Issue | null> {
     [id],
   );
   return (rows[0] as Issue) ?? null;
+}
+
+// ---------- Project management ----------
+
+export async function getProjects(): Promise<Project[]> {
+  const rows = await query(`
+    SELECT p.id, p.name, p.description, to_char(p.due_date, 'YYYY-MM-DD') AS due_date,
+      COUNT(t.id)::int AS task_count,
+      COUNT(t.id) FILTER (WHERE t.status = 'Done')::int AS done_count
+    FROM projects p
+    LEFT JOIN tasks t ON t.project_id = p.id
+    GROUP BY p.id
+    ORDER BY p.due_date NULLS LAST, p.name`);
+  return rows as Project[];
+}
+
+export async function getProject(id: number): Promise<Project | null> {
+  const rows = await query(
+    "SELECT id, name, description, to_char(due_date, 'YYYY-MM-DD') AS due_date FROM projects WHERE id = $1",
+    [id],
+  );
+  return (rows[0] as Project) ?? null;
+}
+
+// Shared SELECT for tasks, including where they came from (feature + issue) if linked
+const TASK_SELECT = `
+  SELECT t.id, t.project_id, t.title, t.description, t.assignee, t.priority, t.status, t.issue_id,
+    to_char(t.due_date, 'YYYY-MM-DD') AS due_date,
+    p.name AS project_name, i.issue AS issue_text, f.id AS feature_id, f.name AS feature_name
+  FROM tasks t
+  JOIN projects p ON p.id = t.project_id
+  LEFT JOIN issues i ON i.id = t.issue_id
+  LEFT JOIN features f ON f.id = i.feature_id`;
+
+export async function getTasks(projectId: number): Promise<Task[]> {
+  const rows = await query(
+    `${TASK_SELECT} WHERE t.project_id = $1 ORDER BY t.due_date NULLS LAST, t.created_at, t.id`,
+    [projectId],
+  );
+  return rows as Task[];
+}
+
+export async function getTask(id: number): Promise<Task | null> {
+  const rows = await query(`${TASK_SELECT} WHERE t.id = $1`, [id]);
+  return (rows[0] as Task) ?? null;
+}
+
+// All tasks created from any issue of a feature (shown under each issue block)
+export async function getTasksForFeature(featureId: number): Promise<Task[]> {
+  const rows = await query(`${TASK_SELECT} WHERE i.feature_id = $1 ORDER BY t.created_at, t.id`, [featureId]);
+  return rows as Task[];
 }

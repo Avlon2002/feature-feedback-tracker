@@ -36,8 +36,18 @@ h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
 
 main { max-width: 900px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
 
-.topbar { padding: 0.75rem 1rem; background: var(--card); border-bottom: 1px solid var(--border); }
-.brand { font-weight: 700; color: var(--text); }
+.topbar {
+  display: flex; align-items: center; gap: 1.5rem; padding: 0 1rem;
+  background: var(--card); border-bottom: 1px solid var(--border);
+}
+.brand { font-weight: 700; color: var(--text); padding: 0.75rem 0; }
+.topbar nav { display: flex; gap: 0.25rem; }
+.nav-link {
+  padding: 0.75rem 0.75rem; color: var(--muted); border-bottom: 2px solid transparent;
+  text-decoration: none !important;
+}
+.nav-link:hover { color: var(--text); }
+.nav-link.active { color: var(--text); border-bottom-color: var(--primary); font-weight: 600; }
 
 .card {
   display: block; background: var(--card); border: 1px solid var(--border);
@@ -98,6 +108,47 @@ h2 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
 .search { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
 .search input { flex: 1; }
 .result-issue { margin: 0.25rem 0; }
+
+/* ---------- Project management ---------- */
+.overdue { color: var(--danger); font-weight: 600; }
+
+/* Progress bar on the projects list */
+.progress { height: 6px; background: var(--border); border-radius: 999px; margin: 0.6rem 0 0.3rem; overflow: hidden; }
+.progress > div { height: 100%; background: var(--primary); }
+
+/* Board: columns side by side, stacked on phones */
+main:has(.board) { max-width: 1200px; }
+.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .board { grid-template-columns: 1fr; } }
+.column { background: var(--border); border-radius: 10px; padding: 0.75rem; min-height: 120px; }
+.column-title { margin: 0 0 0.6rem; font-size: 0.95rem; }
+.column-empty { margin: 0; text-align: center; padding: 1rem 0; }
+
+.task-card {
+  background: var(--card); border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 0.6rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.task-title { display: block; font-weight: 600; color: var(--text); }
+.task-meta { display: flex; flex-wrap: wrap; gap: 0.3rem 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+.task-from { display: block; margin-top: 0.3rem; }
+.task-move { display: flex; margin-top: 0.6rem; }
+
+.prio { font-weight: 600; }
+.prio-high { color: var(--danger); }
+.prio-medium { color: #b7791f; }
+.prio-low { color: var(--muted); }
+
+.from-issue { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0; }
+
+/* Tasks listed under an issue block on the feature page */
+.issue-tasks { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.9rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.task-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem;
+  border: 1px solid var(--border); border-radius: 999px; color: var(--text);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot-in-progress { background: var(--primary); }
+.dot-done { background: #22a06b; }
 
 /* Status badges */
 .badge { display: inline-block; padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.8rem; white-space: nowrap; background: #e5e7eb; color: #374151; }

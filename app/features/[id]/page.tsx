@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import SubmitButton from "@/components/SubmitButton";
 import { deleteIssue } from "@/app/actions";
-import { getFeature, getIssues } from "@/lib/db";
+import { getFeature, getIssues, getTasksForFeature } from "@/lib/db";
 import { statusClass } from "@/lib/options";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ id: st
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
 
-  const [feature, issues] = await Promise.all([getFeature(id), getIssues(id)]);
+  const [feature, issues, tasks] = await Promise.all([getFeature(id), getIssues(id), getTasksForFeature(id)]);
   if (!feature) notFound();
 
   return (
@@ -54,6 +54,16 @@ export default async function FeaturePage({ params }: { params: Promise<{ id: st
             {i.decision_date && <Field label="Decision date" value={i.decision_date} />}
             {i.decision_reason && <Field label="Reason" value={i.decision_reason} />}
           </dl>
+
+          <div className="issue-tasks">
+            {tasks.filter((t) => t.issue_id === i.id).map((t) => (
+              <Link key={t.id} href={`/tasks/${t.id}`} className="task-chip small">
+                <span className={"dot dot-" + t.status.toLowerCase().replace(/\s+/g, "-")} />
+                {t.title} <span className="muted">· {t.project_name} · {t.status}</span>
+              </Link>
+            ))}
+            <Link href={`/tasks/new?issue=${i.id}`} className="btn small">+ Create task</Link>
+          </div>
         </article>
       ))}
 
